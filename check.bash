@@ -16,6 +16,6 @@ ssh ${user}@${server} -- 'sudo systemctl restart thor'
 linux=$(sha256sum thor | awk '{print $1}')
 windows=$(sha256sum thor.exe | awk '{print $1}')
 
-comm="curl -kvvvL -H 'Content-Type: application/json' -d '{\"shas\":[{\"sha\":\"$linux\",\"name\":\"thor\"},{\"sha\":\"$windows\",\"name\":\"thor.exe\"}]}' https://localhost:9100/api/v1/shasum"
+comm="curl -kvvvL -H 'Content-Type: application/json' -d '{\"shas\":[{\"sha\":\"$linux\",\"name\":\"thor\"},{\"sha\":\"$windows\",\"name\":\"thor.exe\"}]}' https://\$(netstat -plunt | grep 9100 | awk '{print \$4}')/api/v1/shasum"
 ssh ${user}@${server} -- ${comm}
 
