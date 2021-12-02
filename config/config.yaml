@@ -1,0 +1,107 @@
+# TLS is the primary config for THOR to listen on
+tls:
+  hostname: thor.example.com
+  port: 9100
+  cacert: /etc/ssl/thor.crt
+  cakey: /etc/ssl/thor.key
+  # letsencryot is currently untested in this implementation
+  # but implements code brought over from another project
+  # e.g. it **should** work
+  letsencrypt: false
+vault:
+  address: https://vault.example.com.com
+
+  # Only enable one of the following role methods
+  # Of the 3, appRole is the only one tested - they
+  # are used in pkg/vault/clients.go
+
+  # appRole:
+  #   roleId: ""
+  #   secretId: ""
+  #   wrapped: false
+  # azureRole:
+  #   role: ""
+  # awsRole:
+  #   role: ""
+
+  # If using the root namespace, set this to "root"
+  namespace: root
+
+  # securePath should be a KV version 1 store
+  # this path will contain random generated
+  # one time encryption keys. You do not need
+  # versioning information for these
+  securePath: /secure/devices
+  encryptionkey: /secure/thor
+
+  # passwordPolicy is used to control how passwords
+  # are generated for a device. This exists to remove
+  # any characters which may be problematic for the
+  # environment
+  passwordPolicy:
+    excludeCharacters: \`\"'$#%
+    length: 16
+
+
+  # During an ex-employee search, values at the following fields
+  # will be replaced if they exist at a given path
+  replaceableKeys:
+    - administrator
+    - root
+    - centos
+    - ubuntu
+    - ec2-user
+    - password
+
+# trusted inbound is the list of IP addresses allowed to access the
+# two secure api endpoints - /api/v1/shasum and /api/v1/adddevices
+trustedInbound:
+  - 127.0.0.1
+
+# The location of the loki server used to store Vault audit logs
+loki:
+  server: 127.0.0.1
+  port: 3100
+
+  # TODO These credentials need to be pulled from vault
+  username: ""
+  password: ""
+
+# Presently unused
+# The longer term goal for this is to prevent a user maliciously abusing the
+# system by changing credentials used by users still active within a company
+# This would encorporate an additional check against an email address
+# to ensure the disabled flag is set, ignoring the entire request if not
+ldap:
+  server: ""
+  port: 0
+  baseDn: ""
+  filterDn: ""
+
+  # TODO needs to be moved to vault if required
+  bindAccount: ""
+  password: ""
+
+# Configuration bindings for saml auth to OKTA
+saml:
+  idpMetadata: ""
+  privateKey: []
+  certificate: []
+
+# Admin account
+admin:
+  # change this in the UI - the password is curently set to Password123
+  email: admin@example.com
+  password: JDJhJDEwJDJDOTI2NXpDVGswZUlVN3ppa2ZYa2UvVzl2WVlhd3k0dWkuM3J3T2JYQXpuVnlSOW4vWHBt
+  totp: ""
+
+# Future development - Thor will be configurable in "edge mode" where it would
+# act as a relay to an upstream server,
+agent:
+  vaultServer: "https://vault.example.com"
+  thorServer: "http://thor.example.com:9100"
+  paths: []
+  namespace: "root"
+# set this to false on first time run if you're blanking out admin config
+configured: true
+

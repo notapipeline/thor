@@ -1,0 +1,163 @@
+{{template "header.html" .}}
+
+<div class="ui container">
+
+    {{with $success := $.Request.FormValue "success"}}
+        <div class="ui large info message">
+            <div class="header">
+                {{if eq $success "settings"}}
+                    Settings saved successfully
+                {{end}}
+            </div>
+            <a class="close-link" href="/"><i class="close icon"></i></a>
+        </div>
+    {{end}}
+
+    {{with $error := $.Request.FormValue "error"}}
+        <div class="ui large negative message">
+            <div class="content">
+                <div class="header">
+                    {{$error}}
+                </div>
+                <a class="close-link" href="/"><i class="close icon"></i></a>
+            </div>
+        </div>
+        <div class="ui hidden divider"></div>
+    {{end}}
+
+    {{ $l := len $.Errors }}
+    {{if gt $l 0 }}
+        <div class="ui large negative message">
+            <ul class="content">
+                {{range $i, $e := $.Errors}}
+                <li>{{$e}}</li>
+                {{end}}
+            </ul>
+        </div>
+        <div class="ui hidden divider"></div>
+    {{end}}
+
+    <div class="ui padded segment">
+        <!-- Stupid side column thing -->
+        <div class="ui stackable two column grid">
+            <div class="column">
+                <div class="ui hidden divider"></div>
+                <div class="ui huge center aligned icon header">
+                    <!-- i class="{{$.SemanticTheme}} clockwise rotated strikethrough icon"></i>
+                    <div class="content">Thor is online</div -->
+                </div>
+                <div class="ui hidden divider"></div>
+            </div>
+
+            {{ $pass := false }}
+            {{ if $.Search.Results }}
+                {{ $pass = eq $.Search.SearchType "password" }}
+            {{ end }}
+
+            <!-- BEGIN SEARCH FORMS -->
+            <div class="column">
+                <div class="ui top attached tabular menu search">
+                    <a class="{{if not $pass}}active{{end}} item" data-tab="exemployee">Ex Employee</a>
+                    <a class="{{if $pass}}active{{end}} item" data-tab="compromised">Compromised Password</a>
+                </div>
+                <div class="ui bottom attached {{if not $pass}}active{{end}} tab segment" data-tab="exemployee">
+                    <form class="ui huge form" action="/search" method="POST" id="employee">
+                        <h3>Ex Employee search</h3>
+                        <div class="field">
+                            <input name="email" type="text" value="{{$.Request.FormValue "email"}}" placeholder="Email Address" autofocus>
+                        </div>
+                        <div class="field">
+                            <button type="submit" class="submit ui huge {{$.SemanticTheme}} fluid button primary">Search</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="ui bottom attached {{if $pass}}active{{end}} tab segment" data-tab="compromised">
+                    <form class="ui huge form" action="/search" method="POST" id="password">
+                        <h3>Compromised Password search</h3>
+                        <div class="field">
+                            <input name="password" type="password" value="{{$.Request.FormValue "password"}}" placeholder="Password" autofocus>
+                        </div>
+                        <div class="field">
+                            <input name="namespace" type="text" value="{{$.Request.FormValue "namespace"}}" placeholder="Namespace" autofocus>
+                        </div>
+                        <div class="field">
+                            <button type="submit" class="submit ui huge {{$.SemanticTheme}} fluid button primary">Search</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- END SEARCH FORMS -->
+        </div>
+
+        <div class="ui hidden divider"></div>
+
+        {{ if $.Search.Results }}
+        {{$l := len $.Search.Results}}
+        <div id="results">
+            {{if eq $.Search.SearchType "ex-employee"}}
+                <div class="ui top attached tabular menu results">
+                    {{range $i, $n := $.Search.Results}}
+                    <a class="{{if eq $i 0}}active{{end}} item" data-tab="{{replace $n.Namespace "/" "_"}}">{{$n.Namespace}}</a>
+                    {{end}}
+                </div>
+
+                {{range $i, $n := $.Search.Results}}
+                <div class="ui bottom attached {{if eq $i 0}}active{{end}} tab segment" data-tab="{{replace $n.Namespace "/" "_"}}">
+                    <form class="ui huge form" action="/rotate" method="POST" id="employeeResults">
+                        <input type="hidden" name="type" value="ex-employee" />
+                        <input type="hidden" name="namespace" value="{{$n.Namespace}}" />
+                        <table class="ui celled table">
+                            <thead>
+                                <th>
+                                    <input type=checkbox onClick="toggle(this, '{{$n.Namespace}}[]')" />
+                                </th>
+                                <th>Path</th>
+                                <th>
+                                    <button type="submit" class="submit ui large red {{$.SemanticTheme}} button right floated">Rotate selected</button>
+                                </th>
+                            </thead>
+                            <tbody>
+                            {{range $x, $p := $n.Paths}}
+                                <tr>
+                                    <td><input type=checkbox name="{{$n.Namespace}}[]" value="{{$p}}" /></td>
+                                    <td colspan="2">{{$p}}</td>
+                                </tr>
+                            {{end}}
+                            <tbody>
+                        </table>
+                    </form>
+                </div>
+                {{end}}
+            {{else}}
+                <form class="ui huge form" action="/rotate" method="POST" id="passwordResults">
+                    <input type="hidden" name="type" value="password">
+                    <input type="hidden" name="namespace" value="{{$.Search.Namespace}}" />
+                    <input type="hidden" name="password" value="{{$.Search.Password}}" />
+
+                    <table class="ui celled table">
+                        <thead>
+                            <th>
+                                <input type=checkbox onClick="toggle(this, '{{$.Search.Namespace}}[]')" />
+                            </th>
+                            <th>Path</th>
+                            <th>
+                                <button type="submit" class="submit ui large red {{$.SemanticTheme}} button right floated">Rotate selected</button>
+                            </th>
+                        </thead>
+                        <tbody>
+                        {{range $n, $p := $.Search.Results}}
+                            <tr>
+                                <td><input type=checkbox name="{{$.Search.Namespace}}[]" value="{{$p.Path}}" /></td>
+                                <td colspan="2">{{$p.Path}}</td>
+                            </tr>
+                        {{end}}
+                        <tbody>
+                    </table>
+                </form>
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+</div>
+
+{{template "footer.html" .}}
