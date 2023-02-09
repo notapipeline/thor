@@ -45,7 +45,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.4
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/autotls v0.0.3
-	github.com/gin-gonic/gin v1.7.4
+	github.com/gin-gonic/gin v1.7.7
 	github.com/grafana/loki v1.6.2-0.20211123130125-8a914b5c2fab
 	github.com/hashicorp/vault/api v1.3.0
 	github.com/hashicorp/vault/api/auth/aws v0.1.0
