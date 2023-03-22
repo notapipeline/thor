@@ -38,7 +38,7 @@ replace github.com/thanos-io/thanos v0.22.0 => github.com/thanos-io/thanos v0.19
 require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/coreos/go-systemd/v22 v22.3.2
-	github.com/crewjam/saml v0.4.9
+	github.com/crewjam/saml v0.4.13
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/gin-contrib/multitemplate v0.0.0-20211002122701-e9e3201b87a0
@@ -141,14 +141,14 @@ require (
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gogo/status v1.1.0 // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/cabbie v1.0.2 // indirect
 	github.com/google/glazier v0.0.0-20211029225403-9f766cca891d // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/pprof v0.0.0-20210827144239-02619b876842 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.0 // indirect
@@ -238,7 +238,7 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/prometheus/prometheus v1.8.2-0.20211011171444-354d8d2ecfac // indirect
 	github.com/rs/xid v1.2.1 // indirect
-	github.com/russellhaering/goxmldsig v1.1.1 // indirect
+	github.com/russellhaering/goxmldsig v1.2.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/scjalliance/comshim v0.0.0-20190308082608-cf06d2532c4e // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
