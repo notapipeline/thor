@@ -38,7 +38,7 @@ replace github.com/thanos-io/thanos v0.22.0 => github.com/thanos-io/thanos v0.19
 require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/crewjam/saml v0.4.13
+	github.com/crewjam/saml v0.4.14
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/gin-contrib/multitemplate v0.0.0-20211002122701-e9e3201b87a0
@@ -54,10 +54,9 @@ require (
 	github.com/pion/dtls/v2 v2.2.4
 	github.com/pquerna/otp v1.3.0
 	github.com/sirupsen/logrus v1.8.1
-
-	golang.org/x/crypto v0.9.0
+	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.10.0
-	golang.org/x/sys v0.8.0
+	golang.org/x/sys v0.13.0
 	gopkg.in/ldap.v2 v2.5.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -101,10 +100,9 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee // indirect
 	github.com/cenkalti/backoff/v3 v3.0.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/containerd/containerd v1.5.18 // indirect
-
 	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
@@ -210,7 +208,6 @@ require (
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/miekg/dns v1.1.43 // indirect
 	github.com/minio/md5-simd v1.1.0 // indirect
@@ -239,18 +236,16 @@ require (
 	github.com/pion/udp v0.1.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-
 	github.com/prometheus/alertmanager v0.26.0-rc.0 // indirect
 	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
-
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/node_exporter v1.0.0-rc.0.0.20200428091818-01054558c289 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/prometheus/prometheus v1.8.2-0.20211011171444-354d8d2ecfac // indirect
 	github.com/rs/xid v1.2.1 // indirect
-	github.com/russellhaering/goxmldsig v1.2.0 // indirect
+	github.com/russellhaering/goxmldsig v1.3.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/scjalliance/comshim v0.0.0-20190308082608-cf06d2532c4e // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
@@ -273,22 +268,18 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.0 // indirect
-
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.1.11-0.20210813005559-691160354723 // indirect
-
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	go4.org/intern v0.0.0-20210108033219-3eb7198706b2 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20201222180813-1025295fd063 // indirect
-
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
-
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.103.0 // indirect
