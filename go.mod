@@ -55,7 +55,7 @@ require (
 	github.com/pquerna/otp v1.3.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.14.0
-	golang.org/x/net v0.10.0
+	golang.org/x/net v0.17.0
 	golang.org/x/sys v0.13.0
 	gopkg.in/ldap.v2 v2.5.1
 	gopkg.in/yaml.v2 v2.4.0
