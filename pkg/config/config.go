@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -70,7 +69,7 @@ func NewConfig(filename string) (*Config, error) {
 		Configured: false,
 	}
 
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +132,7 @@ func (c *Config) RUnlock() {
 }
 
 func Overwrite(filename string, data []byte, perm os.FileMode) error {
-	f, err := ioutil.TempFile(filepath.Dir(filename), filepath.Base(filename)+".tmp")
+	f, err := os.CreateTemp(filepath.Dir(filename), filepath.Base(filename)+".tmp")
 	if err != nil {
 		return err
 	}

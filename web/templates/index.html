@@ -41,10 +41,21 @@
         <!-- Stupid side column thing -->
         <div class="ui stackable two column grid">
             <div class="column">
-                <div class="ui hidden divider"></div>
-                <div class="ui huge center aligned icon header">
-                    <!-- i class="{{$.SemanticTheme}} clockwise rotated strikethrough icon"></i>
-                    <div class="content">Thor is online</div -->
+                <div class="ui huge center aligned icon header description">
+                    <h1><img src="/static/thor.png" alt="thor.png" />Thor : credential management</h1>
+                    <div class="exemployee content">
+                        <p>Search vault audit logs for user activity.</p>
+                        <p>This form should be used primarily for searching for paths a user has interacted with
+                           in order to rotate any and all passwords accessed.</p>
+                        <p>Paths will be split by namespace and each namespace will require a specific token to change paths</p>
+                        <p>Root tokens should not be used</p>
+                    </div>
+                    <div class="compromised content hidden" style="display: none;">
+                        <p>Search a given vault namespace for any and all uses of a single password</p>
+                        <p>If multiple paths are found, each path will be replaced with a unique password.</p>
+                        <p>This form can be used to regain control of a machine if the passwords have been lost,
+                           stolen or if it is believed the machine has been compromised.</p>
+                    </div>
                 </div>
                 <div class="ui hidden divider"></div>
             </div>
@@ -157,6 +168,15 @@
             {{end}}
         </div>
         {{end}}
+    </div>
+    <div class="ui icon message hidden" id="log">
+        <i class="notched circle loading icon"></i>
+        <div class="content">
+            <div class="header">Updating passwords</div>
+            <ul id="logmessages">
+                <li></li>
+            </ul>
+        </div>
     </div>
 </div>
 

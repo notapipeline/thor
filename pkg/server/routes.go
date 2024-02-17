@@ -48,8 +48,10 @@ func (server *Server) setupRoutes() {
 	server.engine.POST("/api/v1/shasum", server.AddShaSum)
 
 	// edge device api calls
-	server.engine.POST("/api/v1/edge/register", server.EdgeRegister)
-	server.engine.POST("/api/v1/edge/token", server.EdgeToken)
+	/*server.engine.POST("/api/v1/edge/register", server.EdgeRegister)
+	server.engine.POST("/api/v1/edge/token", server.EdgeToken)*/
+
+	server.router.GET("/api/v1/log", server.log)
 
 	// test hook - only available if running in debug
 	if os.Getenv("THOR_LOG") == "debug" {

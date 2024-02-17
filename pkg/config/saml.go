@@ -74,8 +74,6 @@ func (s *SamlConfig) Configure(hostname string) error {
 		Certificate:       keyPair.Leaf,
 		IDPMetadata:       entity,
 		CookieName:        SessionCookieNameSSO,
-		CookieDomain:      hostname,
-		CookieSecure:      true,
 		AllowIDPInitiated: true,
 	})
 

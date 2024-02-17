@@ -18,6 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/notapipeline/thor/pkg/config"
+	loki "github.com/notapipeline/thor/pkg/loki"
 	"github.com/notapipeline/thor/pkg/vault"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -31,10 +32,14 @@ type Server struct {
 	vault       *vault.Vault
 	wakeup      chan string
 	stop        chan bool
+	logChannel  chan loki.SimpleMessage
+	logOpen     bool
 }
 
 func NewServer() *Server {
-	server := Server{}
+	server := Server{
+		logOpen: false,
+	}
 	var (
 		dbname string = filepath.Join(config.DataDir, "thor.db")
 		err    error

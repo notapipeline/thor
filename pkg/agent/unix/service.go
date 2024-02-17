@@ -1,4 +1,5 @@
 //go:build !windows
+
 package unix
 
 import (
@@ -8,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/notapipeline/thor/pkg/agent/app"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -19,12 +20,12 @@ const (
 
 func (s *Service) runService(name string) error {
 	var err error
-	running := time.Tick(FAST * time.Millisecond)
-	paused := time.Tick(SLOW * time.Millisecond)
+	running := time.NewTicker(FAST * time.Millisecond).C
+	paused := time.NewTicker(SLOW * time.Millisecond).C
 
 	tick := running
 	stop := make(chan bool)
-	sig := make(chan os.Signal)
+	sig := make(chan os.Signal, 1)
 	pause := make(chan bool)
 	cont := make(chan bool)
 	done := make(chan bool)

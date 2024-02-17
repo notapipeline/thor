@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/notapipeline/thor/pkg/config"
 	"github.com/pquerna/otp/totp"
 	log "github.com/sirupsen/logrus"
-	"github.com/notapipeline/thor/pkg/config"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -69,7 +69,9 @@ func (server *Server) Signout(c *gin.Context) {
 		Domain: server.config.TLS.HostName,
 		Path:   "/",
 	})
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Error(err)
+	}
 
 	if server.config.Saml.SamlSP != nil {
 		http.SetCookie(c.Writer, &http.Cookie{

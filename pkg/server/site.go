@@ -2,8 +2,10 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"image/png"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,11 +14,11 @@ import (
 	"github.com/crewjam/saml/samlsp"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/pquerna/otp/totp"
-	log "github.com/sirupsen/logrus"
 	"github.com/notapipeline/thor/pkg/config"
 	"github.com/notapipeline/thor/pkg/loki"
 	"github.com/notapipeline/thor/pkg/vault"
+	"github.com/pquerna/otp/totp"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,24 +55,53 @@ func (server *Server) Rotate(c *gin.Context) {
 		return
 	}
 
+	// Log channel is opened by the websocket
+	// which needs to be listening before we write to it.
+	for {
+		if server.logOpen {
+			break
+		}
+		time.Sleep(100 * time.Nanosecond)
+	}
+
 	if token, ok := request["token"].(string); ok {
 		namespace := request["namespace"].(string)
 		password := request["password"].(string)
 		paths := request[namespace].([]string)
+
+		server.logChannel <- loki.SimpleMessage{
+			Time:    time.Now().Format("2006-01-02 15:04:05"),
+			Host:    "thor",
+			Message: "Creating child token",
+		}
 		if err := server.vault.CreateAndStoreChildCreationToken(token, namespace, paths); err != nil {
 			server.Error(c, http.StatusInternalServerError, err)
 			return
 		}
+
+		current := sessions.Default(c)
+		hosts := make([]string, 0)
 		for _, p := range paths {
+			hosts = append(hosts, filepath.Base(p))
+		}
+		current.Set("hosts", hosts)
+
+		for _, p := range paths {
+			server.logChannel <- loki.SimpleMessage{
+				Time:    time.Now().Format("2006-01-02 15:04:05"),
+				Host:    "thor",
+				Message: fmt.Sprintf("Clearing prior rotation details for %s/%s", namespace, p),
+			}
+
 			server.vault.ClearRotation(token, namespace, p)
 			if request["type"].(string) == "ex-employee" {
 				for _, credential := range server.config.Vault.Replaceable {
-					for _, e := range server.vault.Rotate(p, token, credential, namespace, false) {
+					for _, e := range server.vault.Rotate(p, token, credential, namespace, false, &server.logChannel) {
 						web.Error(e)
 					}
 				}
 			} else {
-				for _, e := range server.vault.Rotate(p, token, password, namespace, true) {
+				for _, e := range server.vault.Rotate(p, token, password, namespace, true, &server.logChannel) {
 					web.Error(e)
 				}
 			}
@@ -187,7 +218,10 @@ func (server *Server) Configure(c *gin.Context) {
 		server.config.Admin.Email = email
 		server.config.Admin.Password = b64.StdEncoding.EncodeToString(hashedPassword)
 		server.config.Configured = true
-		server.config.Save()
+		if err := server.config.Save(); err != nil {
+			c.Redirect(http.StatusFound, "/configure?error=save")
+			return
+		}
 
 		c.Redirect(http.StatusFound, "/")
 		return
@@ -217,7 +251,10 @@ func (server *Server) Settings(c *gin.Context) {
 
 		server.config.Admin.Email = email
 		server.config.Saml.IDPMetadata = samlMetadata
-		server.config.Save()
+		if err := server.config.Save(); err != nil {
+			c.Redirect(http.StatusFound, "/settings?error=save")
+			return
+		}
 
 		if len(samlMetadata) > 0 {
 			if err := server.config.Saml.Configure(server.config.TLS.HostName); err != nil {
@@ -251,7 +288,10 @@ func (server *Server) Settings(c *gin.Context) {
 			}
 
 			server.config.Admin.Password = b64.StdEncoding.EncodeToString(hashedPassword)
-			server.config.Save()
+			if err := server.config.Save(); err != nil {
+				c.Redirect(http.StatusFound, "/settings?error=save")
+				return
+			}
 		}
 
 		resetTotp := request["reset_totp"]
@@ -262,7 +302,10 @@ func (server *Server) Settings(c *gin.Context) {
 				c.Redirect(http.StatusFound, "/settings?error=totp")
 				return
 			}
-			server.config.Save()
+			if err := server.config.Save(); err != nil {
+				c.Redirect(http.StatusFound, "/settings?error=save")
+				return
+			}
 			c.Redirect(http.StatusFound, "/settings?success=totp")
 			return
 		}
@@ -274,7 +317,10 @@ func (server *Server) Settings(c *gin.Context) {
 				return
 			}
 			server.config.Admin.TotpKey = server.config.AdminOTP.Secret()
-			server.config.Save()
+			if err := server.config.Save(); err != nil {
+				c.Redirect(http.StatusFound, "/settings?error=save")
+				return
+			}
 		}
 		c.Redirect(http.StatusFound, "/settings?success=settings")
 	}
@@ -304,7 +350,9 @@ func (server *Server) AdminQR(c *gin.Context) {
 		return
 	}
 
-	png.Encode(&buf, img)
+	if err := png.Encode(&buf, img); err != nil {
+		return
+	}
 	c.Data(http.StatusOK, "image/png", buf.Bytes())
 }
 
@@ -335,7 +383,7 @@ func (server *Server) isAdminSession(c *gin.Context) bool {
 }
 
 // Get the User object from session if session is active
-func (server *Server) getUserSession(c *gin.Context) *config.User {
+/*func (server *Server) getUserSession(c *gin.Context) *config.User {
 	var user *config.User
 	if _, ok := c.Get(sessions.DefaultKey); ok {
 		session := sessions.Default(c)
@@ -344,4 +392,4 @@ func (server *Server) getUserSession(c *gin.Context) *config.User {
 		}
 	}
 	return user
-}
+}*/
