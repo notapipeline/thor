@@ -8,8 +8,9 @@ import (
 	"time"
 
 	vault "github.com/hashicorp/vault/api"
-	log "github.com/sirupsen/logrus"
 	"github.com/notapipeline/thor/pkg/config"
+	"github.com/notapipeline/thor/pkg/loki"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -384,7 +385,7 @@ func (v *Vault) ClearRotation(token, namespace, path string) {
 // `search` can be either a key at a given path, or the secret value at a given path
 //
 // If a match is found, the value stored at that key will be updated
-func (v *Vault) Rotate(path, token, search, namespace string, compromised bool) []error {
+func (v *Vault) Rotate(path, token, search, namespace string, compromised bool, logChannel *chan loki.SimpleMessage) []error {
 	var (
 		errors []error = make([]error, 0)
 		err    error
@@ -427,6 +428,7 @@ func (v *Vault) Rotate(path, token, search, namespace string, compromised bool) 
 		}
 	}
 
+	var changed bool = false
 	for key, value := range data {
 		// Never update the rotated key at a given path
 		if key == "rotated" {
@@ -442,6 +444,12 @@ func (v *Vault) Rotate(path, token, search, namespace string, compromised bool) 
 			var update bool = true
 
 			// Generate a new secret
+			*logChannel <- loki.SimpleMessage{
+				Time:    time.Now().Format("2006-01-02 15:04:05"),
+				Host:    "thor",
+				Message: fmt.Sprintf("Generating new password for %s/%s", namespace, path),
+			}
+
 			s, err := client.Logical().Write("gen/password", map[string]interface{}{})
 			if err != nil {
 				errors = append(errors, fmt.Errorf("Unable to generate password: %w", err))
@@ -457,6 +465,7 @@ func (v *Vault) Rotate(path, token, search, namespace string, compromised bool) 
 			if update {
 				rotated = append(rotated, key)
 				value = newPass
+				changed = true
 				if v.config.PasswordPolicy != nil {
 					reg := regexp.MustCompile(fmt.Sprintf("[%s]", v.config.PasswordPolicy.ExcludeCharacters))
 					newPass = reg.ReplaceAllString(newPass, "")
@@ -477,9 +486,19 @@ func (v *Vault) Rotate(path, token, search, namespace string, compromised bool) 
 	} else {
 		d = data
 	}
-	_, err = client.Logical().Write(path, d)
-	if err != nil {
-		errors = append(errors, fmt.Errorf("Unable to write secret: %w", err))
+
+	if changed {
+		// Generate a new secret
+		*logChannel <- loki.SimpleMessage{
+			Time:    time.Now().Format("2006-01-02 15:04:05"),
+			Host:    "thor",
+			Message: fmt.Sprintf("Storing updated credentials for %s/%s", namespace, path),
+		}
+
+		_, err = client.Logical().Write(path, d)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("Unable to write secret: %w", err))
+		}
 	}
 
 	return errors

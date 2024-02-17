@@ -63,5 +63,5 @@ func (a *App) logout(username string) {
 		return
 	}
 	os.Remove(file)
-	*a.errors <- NewLogItem(INFO, fmt.Sprintf("%s logged out - %s", username, string(response)))
+	*a.errors <- NewLogItem(INFO, fmt.Sprintf("%s logged out if it was logged in.", username))
 }

@@ -1,14 +1,16 @@
 //go:build !windows
+
 package unix
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/coreos/go-systemd/v22/dbus"
-	log "github.com/sirupsen/logrus"
 	"github.com/notapipeline/thor/pkg/agent/app"
+	log "github.com/sirupsen/logrus"
 )
 
 type Service struct {
@@ -41,11 +43,12 @@ func (s *Service) Usage(errmsg string) {
 func (s *Service) Run() int {
 	var (
 		err         error
-		name        string = "thor-agent"
-		description string = "Secure credential management"
+		name        string          = "thor-agent"
+		description string          = "Secure credential management"
+		ctx         context.Context = context.Background()
 	)
 
-	if s.systemd, err = dbus.NewSystemdConnection(); err != nil {
+	if s.systemd, err = dbus.NewSystemdConnectionContext(ctx); err != nil {
 		log.Errorf("Failed to create dbus connection - %v", err)
 		return 1
 	}
@@ -58,7 +61,10 @@ func (s *Service) Run() int {
 	cmd := strings.ToLower(os.Args[2])
 	switch cmd {
 	case "exec":
-		s.runService(name)
+		if err := s.runService(name); err != nil {
+			log.Fatalf("failed to exec %s: %v", name, err)
+			return 1
+		}
 		return 0
 	case "install":
 		err = s.installService(name, description)

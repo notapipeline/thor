@@ -10,14 +10,14 @@ import (
 	"github.com/crewjam/saml/samlsp"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"github.com/notapipeline/thor/pkg/config"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
 	validEmail    = regexp.MustCompile(`^[ -~]+@[ -~]+$`)
 	validPassword = regexp.MustCompile(`^[ -~]{6,200}$`)
-	validString   = regexp.MustCompile(`^[ -~]{1,200}$`)
+	// validString   = regexp.MustCompile(`^[ -~]{1,200}$`)
 )
 
 func (server *Server) RequireAccount(c *gin.Context) {
@@ -70,7 +70,9 @@ func (server *Server) RequireAccount(c *gin.Context) {
 					Email:  email,
 					Groups: jwtSessionClaims.Attributes["Groups"],
 				}
-				server.signinSession(user, c)
+				if err := server.signinSession(user, c); err != nil {
+					server.Error(c, http.StatusInternalServerError, err)
+				}
 				return
 			}
 		}

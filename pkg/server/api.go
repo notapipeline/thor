@@ -10,8 +10,8 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/gin-gonic/gin"
-	"github.com/pion/dtls/v2"
 	"github.com/notapipeline/thor/pkg/vault"
+	"github.com/pion/dtls/v2"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -129,7 +129,7 @@ func (server *Server) AddDevices(c *gin.Context) {
 		for _, device := range deviceList {
 			err := devices.Put([]byte(device.(string)), []byte(""))
 			if err != nil {
-				log.Errorf("Failed to write to devices table:", err)
+				log.Errorf("Failed to write to devices table: %v", err)
 				return fmt.Errorf("Failed to add device. Please try again.")
 			}
 		}
@@ -176,8 +176,9 @@ func (server *Server) AddShaSum(c *gin.Context) {
 	if err := server.bolt.Update(func(tx *bolt.Tx) error {
 		shasum := tx.Bucket([]byte(SHASUM))
 		if shasum == nil {
-			log.Errorf("Failed to open database for write:")
-			return fmt.Errorf("Internal server error. Please contact the system administrator")
+			err := fmt.Errorf("Failed to open database for write")
+			log.Error(err)
+			return err
 		}
 
 		// TODO:
@@ -197,8 +198,9 @@ func (server *Server) AddShaSum(c *gin.Context) {
 		for _, sum := range request.Shasums {
 			err := shasum.Put([]byte(sum.Sha), []byte(sum.Name))
 			if err != nil {
-				log.Errorf("Failed to write to shasum table:", err)
-				return fmt.Errorf("Failed to add shasum. Please try again.")
+				err = fmt.Errorf("Failed to write to shasum table: %w", err)
+				log.Error(err)
+				return err
 			}
 		}
 		return nil
@@ -309,13 +311,13 @@ func (server *Server) Register(c *gin.Context) {
 	if err := server.bolt.Update(func(tx *bolt.Tx) error {
 		devices := tx.Bucket([]byte(DEVICES_TABLE))
 		if devices == nil {
-			log.Errorf("Failed to open database for write:", err)
+			log.Error("Failed to open database for write:", err)
 			return fmt.Errorf("Internal server error. Please contact the system administrator")
 		}
 
 		err = devices.Put([]byte(clientIP), []byte(key))
 		if err != nil {
-			log.Errorf("Failed to write to devices table:", err)
+			log.Error("Failed to write to devices table:", err)
 			return fmt.Errorf("Failed to save API Key. Please try again.")
 		}
 
@@ -345,9 +347,13 @@ func (server *Server) Register(c *gin.Context) {
 		}
 
 		failures := tx.Bucket([]byte(FAILURES_TABLE))
-		failures.Delete([]byte(clientIP))
+		if err := failures.Delete([]byte(clientIP)); err != nil {
+			log.Errorf("Failed to clear failures for %s: %v", clientIP, err)
+		}
 		expiry := tx.Bucket([]byte(EXPIRY_TABLE))
-		expiry.Delete([]byte(clientIP))
+		if err := expiry.Delete([]byte(clientIP)); err != nil {
+			log.Errorf("Failed to clear expiry for %s: %v", clientIP, err)
+		}
 
 		return nil
 	}); err != nil {
@@ -391,7 +397,7 @@ func (server *Server) Token(c *gin.Context) {
 	if err := server.bolt.View(func(tx *bolt.Tx) error {
 		devices := tx.Bucket([]byte(DEVICES_TABLE))
 		if devices == nil {
-			log.Errorf("Failed to read database:", err)
+			log.Error("Failed to read database:", err)
 			return fmt.Errorf("Internal server error. Please contact the system administrator")
 		}
 
@@ -548,5 +554,7 @@ func (server *Server) writeto(address, message string) {
 	}
 
 	defer dtlsConn.Close()
-	dtlsConn.Write([]byte(fmt.Sprintf("%s\n", message)))
+	if _, err := dtlsConn.Write([]byte(fmt.Sprintf("%s\n", message))); err != nil {
+		log.Error(err)
+	}
 }

@@ -9,7 +9,7 @@ tls:
   # e.g. it **should** work
   letsencrypt: false
 vault:
-  address: https://vault.example.com.com
+  address: https://vault.example.com
 
   # Only enable one of the following role methods
   # Of the 3, appRole is the only one tested - they

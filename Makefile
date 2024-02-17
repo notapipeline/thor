@@ -25,7 +25,7 @@ bindata.go: $(BINDATA)
 	@echo "+++ assets.go created"
 
 mod: # run go mod in 1.17 compatibility mode only
-	go mod tidy -compat=1.17
+	go mod tidy -compat=1.21
 
 $(BINDATA):
 	go get github.com/kevinburke/go-bindata/go-bindata

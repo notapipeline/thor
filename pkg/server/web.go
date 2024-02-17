@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -8,9 +9,9 @@ import (
 	"github.com/crewjam/saml/samlsp"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/notapipeline/thor/pkg/config"
 	"github.com/pquerna/otp"
 	log "github.com/sirupsen/logrus"
-	"github.com/notapipeline/thor/pkg/config"
 )
 
 type Search struct {
@@ -25,23 +26,24 @@ type Search struct {
 
 type Web struct {
 	// Internal
-	w        http.ResponseWriter
-	r        *http.Request
-	ps       gin.Params
-	template string
+	w  http.ResponseWriter
+	r  *http.Request
+	ps gin.Params
+	// template string
 
 	// Default
-	Backlink string
-	Version  string
-	Request  *http.Request
-	Section  string
-	Time     time.Time
-	Admin    bool
-	SamlM    *samlsp.Middleware
-	Saml     config.SamlConfig
-	Info     config.Admin
-	User     config.User
-	Errors   []string
+	Backlink  string
+	Version   string
+	Request   *http.Request
+	Section   string
+	Time      time.Time
+	Admin     bool
+	SamlM     *samlsp.Middleware
+	Saml      config.SamlConfig
+	Info      config.Admin
+	User      config.User
+	Errors    []string
+	WebSocket string
 
 	SemanticTheme string
 	TempTotpKey   *otp.Key
@@ -67,6 +69,7 @@ func NewWeb(c *gin.Context, conf *config.Config) *Web {
 		Search:      &Search{},
 		Info:        *conf.Admin,
 		Errors:      make([]string, 0),
+		WebSocket:   fmt.Sprintf("%s:%d", conf.TLS.HostName, conf.TLS.Port),
 	}
 
 	if _, ok := c.Get(sessions.DefaultKey); ok {

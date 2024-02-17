@@ -1,4 +1,5 @@
 //go:build !windows
+
 package unix
 
 import (
@@ -32,13 +33,21 @@ func (s *Service) installService(serviceName string, description string) error {
 		servicePath string      = filepath.Join("/usr/lib/systemd/system", service)
 	)
 
-	file, err := os.Create(servicePath)
-	if err != nil {
-		return fmt.Errorf("Unable to create service file:", err)
+	var file *os.File
+	{
+		defer file.Close()
+		if file, err = os.Create(servicePath); err != nil {
+			return fmt.Errorf("Unable to create service file: %w", err)
+		}
+
+		if _, err = file.WriteString(SYSTEMFILE); err != nil {
+			return fmt.Errorf("Unable to write to service file: %w", err)
+		}
+
+		if err = file.Sync(); err != nil {
+			return fmt.Errorf("Unable to sync service file: %w", err)
+		}
 	}
-	file.WriteString(SYSTEMFILE)
-	file.Sync()
-	file.Close()
 
 	var files []string = []string{service}
 	_, _, err = s.systemd.EnableUnitFilesContext(context.Background(), files, false, true)

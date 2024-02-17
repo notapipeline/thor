@@ -4,6 +4,23 @@ body {
     background-color: #fdfdfd;
 }
 
+a.home {
+    background-image: url('/static/fence.png');
+    background-size: 75px 50px;
+    width: 75px;
+}
+
+div.header > h1 {
+    position: relative;
+}
+
+div.header > h1 > img {
+  width: 50px;
+  top: -10px;
+  position: absolute;
+  left: 0px;
+}
+
 .showcard {
     background-color: #fdfdfd !important;
 }
@@ -68,7 +85,9 @@ body {
 }
 
 p {
-    font-size: 1.33em !important;
+    font-size: 0.5em;
+    text-align: left;
+    font-weight: normal;
 }
 
 .ui.form input:not([type]),
@@ -89,4 +108,30 @@ p {
 
 ::placeholder {
     color: rgba(0,0,0,.90);
+}
+
+ul#logmessages {
+    padding: 0;
+}
+
+ul#logmessages > li {
+    list-style: none;
+}
+ul#logmessages > li > span {
+    float: left;
+}
+
+span.time {
+    width: 150px;
+}
+
+span.host {
+    width: 150px;
+}
+
+span.logmessage {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 650px;
 }

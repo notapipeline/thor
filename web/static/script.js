@@ -4,5 +4,3 @@ function toggle(source, name) {
         checkboxes[i].checked = source.checked;
     }
 }
-
-

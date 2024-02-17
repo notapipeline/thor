@@ -36,26 +36,75 @@
                 $('.ui.dropdown').dropdown();
                 $('.ui.checkbox').checkbox();
                 var currentForm;
+                var token = "";
                 var modals = ["password", "employeeResults", "passwordResults"];
                 var dialog = $('.modal').modal({
                     closable : false,
                     onApprove: function(){
                         var token = $("#vaultToken").val();
-                        console.log(token)
-                        currentForm.append('<input type="hidden" name="token" value="'+token+'" /> ');
-                        currentForm.submit();
+                        $('<input />').attr("type", "hidden")
+                            .attr("name", "token")
+                            .attr("value", token)
+                            .appendTo(currentForm);
+
+                        // If we're only carrying out search, just return and let
+                        // the submission happen over normal http
+                        var noAjax = ["employeeResults","passwordResults"];
+                        if (!noAjax.includes(currentForm.id)) {
+                            currentForm.submit();
+                            return;
+                        }
+
+                        // When carrying out rotation, we want to bind a websocket
+                        // for streaming log messages back from the server
+
+                        var websocket = $.simpleWebSocket({
+                            url: 'wss://{{ .WebSocket }}/api/v1/log'
+                        });
+
+                        // Send the list of hosts down the log websocket
+                        // then listen for log messages streaming back
+                        var hosts = [];
+                        for (i = 0; i < currentForm.length; i++) {
+                            if (currentForm[i].type == "checkbox" && currentForm[i].name != "" && currentForm[i].checked) {
+                                hosts.push(currentForm[i].value.split('/').reverse()[0]);
+                            }
+                        }
+                        websocket.send({hosts: hosts})
+                        websocket.listen(function(message){
+                            var elem = '<li><span class="time">' + message.time + '</span>'
+                                + '<span class="host">' + message.host + '</span>'
+                                + '<span class="logmessage">' + message.message + '</span></li>';
+                            $("#logmessages").prepend(elem);
+                            if (message.message === "Finished rotating password(s)") {
+                                $('#log > i:first').remove();
+                                $('#log').transition('fade').removeClass('red').addClass('green').transition('fade');
+                            }
+                        });
+
+                        // finally submit the rotation information
+                        // on success, clear the form.
+                        $.ajax({
+                            type: $(currentForm).attr('method'),
+                            url:  $(currentForm).attr('action'),
+                            data: $(currentForm).serialize(),
+                            success: function (data) {
+                                $('#results').empty();
+                                $('#log').removeClass('hidden').addClass('red');
+                            },
+                            error: function (data) {
+                                console.log('An error occurred.');
+                            },
+                        });
                     },
-                    /*onDeny: function(){
-                        console.log('denied')
-                        var token = $("#vaultToken").value = "";
-                        dialog.modal('hide');
-                    },*/
                 });
                 for (var form in modals) {
-                    var id = 'form#'+modals[form]+' .submit';
+                    var id = 'form#'+modals[form];
                     if ($(id).length!= 0) {
-                        $(id).click(function() {
-                            currentForm = $(this).closest('form');
+                        $(id + ' .submit').click(function(e){
+                            e.preventDefault();
+                            e.stopPropagation();
+                            currentForm = $(this).closest('form')[0];
                             dialog.modal('show');
                             return false;
                         });
@@ -81,6 +130,12 @@
                                 $('#results').html(contents[tab]);
                             }
                         }
+                        $('div.description > div.content').each(function() {
+                            $(this).addClass('hidden');
+                            $(this).css({'display': 'none'});
+                        });
+                        $('div.description > div.' + tab).removeClass('hidden');
+                        $('div.description > div.' + tab).css({'display': 'block'});
                         lastTab = tab;
                     }
                 });
