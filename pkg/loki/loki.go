@@ -42,14 +42,14 @@ const (
 )
 
 var (
-	ignore_words []string = []string{
+	ignoreWords []string = []string{
 		"delete",
 		"destroy",
 		"undelete",
 		"metadata",
 	}
 
-	ignore_paths []string = []string{
+	ignorePaths []string = []string{
 		"sys",
 	}
 )
@@ -118,66 +118,94 @@ func (loki *Loki) Search(user string, results *[]Result) error {
 }
 
 func (loki *Loki) search(q *query.Query, results *[]Result) (err error) {
+
 	var entries []streamEntryPair
-	entries, err = loki.query(q)
-	if err != nil {
-		return
+	{
+		if entries, err = loki.query(q); err != nil {
+			err = fmt.Errorf("search: %w", err)
+			return
+		}
 	}
 
 	for _, entry := range entries {
-		requestEntry := make(map[string]interface{})
-		responseEntry := make(map[string]interface{})
-		labels := entry.labels.Map()
-		s := strings.ReplaceAll(labels["request"], "=>", ":")
+		var (
+			requestEntry  map[string]any    = make(map[string]any)
+			responseEntry map[string]any    = make(map[string]any)
+			labels        map[string]string = entry.labels.Map()
+			s             string
+		)
+
+		s = strings.ReplaceAll(labels["request"], "=>", ":")
 		s = strings.ReplaceAll(s, "nil", "null")
-		if err := json.Unmarshal([]byte(s), &requestEntry); err != nil {
-			log.Errorf("JSON UNPACK: ", err)
+
+		if err = json.Unmarshal([]byte(s), &requestEntry); err != nil {
+			err = fmt.Errorf("JSON UNPACK: %w", err)
+			log.Error(err)
+			continue
 		}
 
 		s = strings.ReplaceAll(labels["response"], "=>", ":")
 		s = strings.ReplaceAll(s, "nil", "null")
-		if err := json.Unmarshal([]byte(s), &responseEntry); err != nil {
-			log.Errorf("JSON UNPACK: ", err)
+
+		if err = json.Unmarshal([]byte(s), &responseEntry); err != nil {
+			err = fmt.Errorf("JSON UNPACK: %w", err)
+			log.Error(err)
+			continue
 		}
 
 		if data, ok := responseEntry["data"]; ok {
 			paths := make([]string, 0)
 			for k := range data.(map[string]interface{}) {
+
 				var pathSegments []string = strings.Split(k, "/")
 				if len(pathSegments) > 1 && k[len(k)-1:] != "/" {
-					for _, ignore := range ignore_words {
+					for _, ignore := range ignoreWords {
 						if pathSegments[1] == ignore {
 							pathSegments[1] = "data"
 						}
 					}
 
-					if pathSegments[0] != "sys" {
+					var ignore bool = false
+					for _, ignorePath := range ignorePaths {
+						if pathSegments[0] == ignorePath {
+							ignore = true
+						}
+					}
+
+					if !ignore {
 						paths = append(paths, strings.Join(pathSegments, "/"))
 					}
 				}
 			}
+
 			if len(paths) == 0 {
 				continue
 			}
-			var path string = paths[0]
-			namespace := requestEntry["namespace"].(map[string]interface{})["path"]
-			if namespace != nil && len(strings.Split(path, "/")) > 1 {
-				var skipAddNamespace bool = false
-				for i, v := range *results {
-					if v.Namespace == strings.Trim(namespace.(string), "/") {
-						if !v.Contains(path) {
-							(*results)[i].Paths = append(v.Paths, path)
+
+			for _, path := range paths {
+				namespace := requestEntry["namespace"].(map[string]any)["path"]
+				if namespace != nil && len(strings.Split(path, "/")) > 1 {
+
+					var skipAddNamespace bool = false
+					{
+						for i, v := range *results {
+							if v.Namespace == strings.Trim(namespace.(string), "/") {
+								if !v.Contains(path) {
+									(*results)[i].Paths = append(v.Paths, path)
+								}
+								skipAddNamespace = true
+							}
 						}
-						skipAddNamespace = true
 					}
-				}
-				if !skipAddNamespace {
-					result := Result{
-						Namespace: strings.Trim(namespace.(string), "/"),
-						Paths:     make([]string, 0),
+
+					if !skipAddNamespace {
+						result := Result{
+							Namespace: strings.Trim(namespace.(string), "/"),
+							Paths:     make([]string, 0),
+						}
+						result.Paths = append(result.Paths, path)
+						*results = append(*results, result)
 					}
-					result.Paths = append(result.Paths, path)
-					*results = append(*results, result)
 				}
 			}
 		}
@@ -187,7 +215,6 @@ func (loki *Loki) search(q *query.Query, results *[]Result) (err error) {
 }
 
 func (loki *Loki) ApplicationLogs(hosts []string, result *chan SimpleMessage, done chan bool) error {
-	// querystring needs backticks inside it and escaping is a nightmare
 	queryString := `{thorhost=~"` + strings.Join(hosts, "|") + `"} | logfmt | line_format ` + "`{{" +
 		` .MESSAGE | replace "\\" "" ` + "}}`" +
 		` | logfmt | _EXE=~".*thor" or ProviderName="thor.exe" | __error__ =""`
@@ -204,10 +231,9 @@ func (loki *Loki) ApplicationLogs(hosts []string, result *chan SimpleMessage, do
 
 	go func() {
 		for {
-			select {
-			case <-time.Tick(100 * time.Microsecond):
-				end = time.Now()
-				searchQuery := &query.Query{
+			end = time.Now()
+			var (
+				searchQuery = &query.Query{
 					QueryString: queryString,
 					Start:       start,
 					End:         end,
@@ -216,56 +242,64 @@ func (loki *Loki) ApplicationLogs(hosts []string, result *chan SimpleMessage, do
 					Forward:     true,
 				}
 
-				results, err := loki.getLogMessage(searchQuery)
-				if err != nil {
-					log.Error(err)
-				} else {
-					log.Infof("LOKI - Recieved %d results", len(results))
-					for _, r := range results {
-						log.Info(r.Message)
-						if !completed[r.Host] {
-							*result <- r
-						}
-						if strings.ToLower(r.Message) == "completed rotation" {
-							completed[r.Host] = true
-						}
+				results []SimpleMessage
+				err     error
+			)
 
-						var complete bool = true
-						for _, v := range completed {
-							if !v {
-								complete = false
-							}
-						}
+			if results, err = loki.getLogMessage(searchQuery); err != nil {
+				log.Error(err)
+				continue
+			}
 
-						if complete {
-							done <- true
-							return
+			log.Infof("LOKI - Recieved %d results", len(results))
+			for _, r := range results {
+				log.Info(r.Message)
+				if !completed[r.Host] {
+					*result <- r
+				}
+
+				if strings.ToLower(r.Message) == "completed rotation" {
+					completed[r.Host] = true
+				}
+
+				var complete bool = true
+				{
+					for _, v := range completed {
+						if !v {
+							complete = false
 						}
 					}
 				}
+
+				if complete {
+					done <- true
+					return
+				}
 			}
+			<-time.After(100 * time.Microsecond)
 		}
 	}()
 	return nil
 }
 
 func (loki *Loki) getLogMessage(q *query.Query) (results []SimpleMessage, err error) {
-	results = make([]SimpleMessage, 0)
-	entries, err := loki.query(q)
-	if err != nil {
-		return
+	var entries []streamEntryPair
+	{
+		if entries, err = loki.query(q); err != nil {
+			err = fmt.Errorf("getLogMessage: %w", err)
+			return
+		}
 	}
 
 	log.Infof("LOKI - getLogMessage - Found %d entries", len(entries))
 	for _, entry := range entries {
 		var (
+			labels  map[string]string = entry.labels.Map()
+			host    string            = labels["thorhost"]
 			message string
-			host    string
 			ok      bool
 		)
 
-		labels := entry.labels.Map()
-		host = labels["thorhost"]
 		if _, ok = labels["msg"]; ok {
 			message = labels["msg"]
 		} else if _, ok = labels["EventData"]; ok {
@@ -276,6 +310,7 @@ func (loki *Loki) getLogMessage(q *query.Query) (results []SimpleMessage, err er
 		if len(message) == 0 {
 			continue
 		}
+
 		results = append(results, SimpleMessage{
 			Time:    entry.entry.Timestamp.Format("2006-01-02 15:04:05"),
 			Message: message,
@@ -292,11 +327,11 @@ func (loki *Loki) getLogMessage(q *query.Query) (results []SimpleMessage, err er
 func (loki *Loki) query(q *query.Query) (entries []streamEntryPair, err error) {
 	entries = make([]streamEntryPair, 0)
 	var (
-		resultLength int       = 0
-		total        int       = 0
-		start        time.Time = q.Start
-		end          time.Time = q.End
-		direction              = logproto.BACKWARD
+		resultLength int
+		total        int
+		start        time.Time          = q.Start
+		end          time.Time          = q.End
+		direction    logproto.Direction = logproto.BACKWARD
 		lastEntry    []*loghttp.Entry
 	)
 
@@ -312,10 +347,13 @@ func (loki *Loki) query(q *query.Query) (entries []streamEntryPair, err error) {
 		}
 
 		var resp *loghttp.QueryResponse
-		resp, err = loki.client.QueryRange(q.QueryString, bs, start, end, direction, q.Step, q.Interval, q.Quiet)
-		if err != nil {
-			log.Errorf("LOKI LOOP FOUND ERROR : ", err)
-			return
+		{
+			resp, err = loki.client.QueryRange(q.QueryString, bs, start, end,
+				direction, q.Step, q.Interval, q.Quiet)
+			if err != nil {
+				err = fmt.Errorf("failed to query Loki: %w", err)
+				return
+			}
 		}
 
 		if resp.Data.Result.Type() != logqlmodel.ValueTypeStreams {
@@ -358,48 +396,60 @@ func (loki *Loki) query(q *query.Query) (entries []streamEntryPair, err error) {
 	return
 }
 
-func (loki *Loki) parseStreams(
-	streams loghttp.Streams, entries *[]streamEntryPair,
-	lastEntry []*loghttp.Entry, forward bool) (int, []*loghttp.Entry) {
+func (loki *Loki) parseStreams(streams loghttp.Streams, entries *[]streamEntryPair,
+	lastEntry []*loghttp.Entry, forward bool,
+) (int, []*loghttp.Entry) {
 
-	allEntries := make([]streamEntryPair, 0)
-	for _, s := range streams {
-		for _, e := range s.Entries {
-			allEntries = append(allEntries, streamEntryPair{
-				entry:  e,
-				labels: s.Labels,
-			})
+	var allEntries []streamEntryPair = make([]streamEntryPair, 0)
+	{
+		for _, s := range streams {
+			for _, e := range s.Entries {
+				allEntries = append(allEntries, streamEntryPair{
+					entry:  e,
+					labels: s.Labels,
+				})
+			}
 		}
 	}
 
 	if forward {
-		sort.Slice(allEntries, func(i, j int) bool { return allEntries[i].entry.Timestamp.Before(allEntries[j].entry.Timestamp) })
+		sort.Slice(allEntries, func(i, j int) bool {
+			return allEntries[i].entry.Timestamp.Before(allEntries[j].entry.Timestamp)
+		})
 	} else {
-		sort.Slice(allEntries, func(i, j int) bool { return allEntries[i].entry.Timestamp.After(allEntries[j].entry.Timestamp) })
+		sort.Slice(allEntries, func(i, j int) bool {
+			return allEntries[i].entry.Timestamp.After(allEntries[j].entry.Timestamp)
+		})
 	}
 
-	var length int = 0
-	for _, e := range allEntries {
-		if len(lastEntry) > 0 && e.entry.Timestamp == lastEntry[0].Timestamp {
-			skip := false
-			for _, le := range lastEntry {
-				if e.entry.Line == le.Line {
-					skip = true
+	var length int
+	{
+		for _, e := range allEntries {
+			if len(lastEntry) > 0 && e.entry.Timestamp == lastEntry[0].Timestamp {
+				skip := false
+				for _, le := range lastEntry {
+					if e.entry.Line == le.Line {
+						skip = true
+					}
+				}
+				if skip {
+					continue
 				}
 			}
-			if skip {
-				continue
-			}
+			*entries = append(*entries, e)
+			length++
 		}
-		*entries = append(*entries, e)
-		length++
 	}
 
 	if len(allEntries) == 0 {
 		return 0, nil
 	}
-	lel := []*loghttp.Entry{}
-	le := allEntries[len(allEntries)-1].entry
+
+	var (
+		lel []*loghttp.Entry = []*loghttp.Entry{}
+		le  loghttp.Entry    = allEntries[len(allEntries)-1].entry
+	)
+
 	for i, e := range allEntries {
 		if e.entry.Timestamp.Equal(le.Timestamp) {
 			lel = append(lel, &allEntries[i].entry)
