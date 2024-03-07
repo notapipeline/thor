@@ -24,9 +24,9 @@ require (
 	github.com/pion/dtls/v2 v2.2.10
 	github.com/pquerna/otp v1.4.0
 	github.com/sirupsen/logrus v1.9.0
-	golang.org/x/crypto v0.18.0
+	golang.org/x/crypto v0.19.0
 	golang.org/x/net v0.20.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	gopkg.in/ldap.v2 v2.5.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -110,7 +110,7 @@ require (
 	github.com/fsouza/fake-gcs-server v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
